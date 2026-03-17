@@ -349,17 +349,28 @@ python3.11 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 ```
-
-**If you are on Python 3.11 or 3.10 and still see this error:** Your pip cache
-may have stale metadata. Try:
-```bash
-pip cache purge
-pip install -r requirements.txt
+**If you are on Python 3.11 or 3.10 and still see this error:** The package
+versions in `requirements.txt` may have drifted out of sync with PyPI. This is
+a genuine version conflict — `pip cache purge` will not fix it. Please ensure
+you are using the latest `requirements.txt` from the `main` branch, then
+[open a GitHub issue](https://github.com/ashik0007/semantic-pdf-search/issues)
+with the full error output if the problem persists.
 ```
 
-If the error persists, the package versions in `requirements.txt` may have drifted
-out of sync with PyPI. Please [open a GitHub issue](https://github.com/ashik0007/semantic-pdf-search/issues)
-with the full error output.
+**Patch B** — Find the Step 6 expected output block and replace:
+```
+[qdrant] Using local storage: ./qdrant_storage
+```
+with:
+```
+[qdrant] Using local storage: qdrant_storage
+```
+
+And add the Storage line to match actual code output:
+[index] Collection 'pdf_docs' is ready for queries.
+        Storage: qdrant_storage
+        Next step: python query_docs.py "your question here"
+
 
 ### `Collection 'pdf_docs' not found`
 The index has not been built yet:

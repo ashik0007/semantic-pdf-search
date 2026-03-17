@@ -2,7 +2,7 @@
 query_docs.py — Query the indexed PDF collection.
 
 Usage:
-    python query_docs.py "What is the PDCCH blind decoding limit?"
+    python query_docs.py "What is the main contribution of this paper?"
     python query_docs.py "Explain MCS table 1" --top-k 8
     python query_docs.py "slot formats" --chunks-only      # skip LLM synthesis
     python query_docs.py --interactive                     # REPL mode

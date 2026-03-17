@@ -176,7 +176,8 @@ def main():
     print(
         f"[index] Collection '{config.QDRANT_COLLECTION_NAME}' is ready for queries."
     )
-    print(f"        Storage: {config.QDRANT_STORAGE_PATH}")
+    storage_display = os.path.relpath(config.QDRANT_STORAGE_PATH)
+    print(f"        Storage: {storage_display}")
     print(f"        Next step: python query_docs.py \"your question here\"")
 
 
