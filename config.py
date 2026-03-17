@@ -60,6 +60,8 @@ OLLAMA_TIMEOUT = 120.0  # seconds; increase for large contexts or slow hardware
 # Indexing parameters
 # ─────────────────────────────────────────────
 
+# Set to True to scan subdirectories inside pdfs/ recursively
+RECURSIVE_SCAN = False
 CHUNK_SIZE = 512        # tokens per chunk; larger = more context, less precision
 CHUNK_OVERLAP = 100     # token overlap between chunks; preserves continuity
 

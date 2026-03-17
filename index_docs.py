@@ -86,7 +86,7 @@ def load_documents(source: str):
         reader = SimpleDirectoryReader(
             input_dir=source,
             required_exts=[".pdf"],
-            recursive=False,
+            recursive=config.RECURSIVE_SCAN,
         )
     else:
         print(f"[error] Source '{source}' is neither a file nor a directory.")
