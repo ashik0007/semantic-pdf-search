@@ -22,7 +22,6 @@ Built with [LlamaIndex](https://docs.llamaindex.ai), [Qdrant](https://qdrant.tec
 ---
 
 ## Project structure
-
 ```
 semantic-pdf-search/
 ├── pdfs/                   ← Put your PDF files here
@@ -32,6 +31,7 @@ semantic-pdf-search/
 ├── config.py               ← All tunable parameters in one place
 ├── requirements.txt
 ├── .gitignore
+├── LICENSE
 └── README.md
 ```
 
@@ -46,12 +46,17 @@ qdrant_storage/             ← Auto-created, persists across runs (gitignored)
 
 | Requirement | Version | Purpose |
 |---|---|---|
-| Python | 3.10 or 3.11 | Runtime |
+| Python | **3.10 or 3.11** | Runtime |
 | Git | any | Clone this repo |
 | Ollama | latest | Run local LLM |
 | ~5 GB disk | — | Models + index |
 
 > **Python 3.12** works but some transitive dependencies emit deprecation warnings.
+> **Python 3.13 is not supported.** Use Python 3.10 or 3.11. On macOS with Homebrew:
+> ```bash
+> brew install python@3.11
+> python3.11 -m venv venv
+> ```
 > **Apple Silicon (M1/M2/M3)** is fully supported — PyTorch uses the MPS backend automatically.
 
 ---
@@ -59,30 +64,31 @@ qdrant_storage/             ← Auto-created, persists across runs (gitignored)
 ## Setup (step by step)
 
 ### 1 — Clone the repository
-
 ```bash
-git clone https://github.com/YOUR_USERNAME/semantic-pdf-search.git
+git clone https://github.com/ashik0007/semantic-pdf-search.git
 cd semantic-pdf-search
 ```
 
 ### 2 — Create a Python virtual environment
-
 ```bash
-python3 -m venv venv
+python3.11 -m venv venv          # recommended: use Python 3.11 explicitly
 source venv/bin/activate          # macOS / Linux
 # venv\Scripts\activate           # Windows (Command Prompt)
 ```
 
-### 3 — Install dependencies
+Confirm the Python version inside the venv:
+```bash
+python --version    # should print Python 3.10.x or 3.11.x
+```
 
+### 3 — Install dependencies
 ```bash
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
 > **Note on PyTorch size:** `torch` is pulled transitively by `sentence-transformers` (~2 GB).
-> If you only need CPU inference and want a smaller install, you can pre-install a CPU-only
-> wheel before running the above:
+> If you only need CPU inference and want a smaller install, pre-install a CPU-only wheel first:
 > ```bash
 > pip install torch --index-url https://download.pytorch.org/whl/cpu
 > pip install -r requirements.txt
@@ -93,33 +99,37 @@ pip install -r requirements.txt
 Download Ollama from [https://ollama.com](https://ollama.com) and install it for your platform.
 
 Then pull a model. `mistral` is the default in `config.py`:
-
 ```bash
 ollama pull mistral
 ```
 
-Start the Ollama server (it runs in the background):
+**Starting Ollama — pick your platform:**
 
+**macOS (Ollama.app):** Ollama starts automatically at login after installation. Skip `ollama serve`. Just verify it is running:
+```bash
+curl http://localhost:11434
+# Expected response: Ollama is running
+```
+
+**Linux or macOS (no app / terminal only):** Start the server manually in a separate terminal:
 ```bash
 ollama serve
 ```
-
-> On macOS, Ollama starts automatically after installation.
-> Verify it is running: `curl http://localhost:11434`
+Leave that terminal open and proceed in a new one.
 
 ### 5 — Add your PDFs
 
-Copy or move your PDF files into the `pdfs/` directory:
-
+Copy your PDF files into the `pdfs/` directory:
 ```bash
 cp /path/to/your/document.pdf pdfs/
 ```
 
-You can add as many PDFs as you like. Subdirectories are not scanned by default
-(see [Customization](#customization) to enable recursive scanning).
+Don't have a PDF handy? Download a small public document to test with:
+```bash
+curl -L -o pdfs/test.pdf https://www.w3.org/WAI/WCAG21/wcag21.pdf
+```
 
 ### 6 — Index your PDFs
-
 ```bash
 python index_docs.py
 ```
@@ -130,61 +140,62 @@ This will:
 3. Embed each chunk and store it in `qdrant_storage/`
 
 **Expected output:**
-
 ```
 [embed] Loading embedding model: BAAI/bge-small-en-v1.5
 [embed] Model ready in 3.2s.
 [qdrant] Using local storage: ./qdrant_storage
-[load] Found 3 PDF(s) in './pdfs':
-       • document_a.pdf
-       • document_b.pdf
-       • document_c.pdf
-[load] Loaded 1840 document page(s).
+[load] Found 1 PDF(s) in './pdfs':
+       • test.pdf
+[load] Loaded 84 document page(s).
 [index] Chunking with size=512, overlap=100. Embedding and storing...
-100%|████████████████████████| 5535/5535 [03:12<00:00, 28.8it/s]
-[index] Done in 192.4s.
+100%|████████████████████████| 210/210 [00:18<00:00, 11.4it/s]
+[index] Done in 21.3s.
 [index] Collection 'pdf_docs' is ready for queries.
+        Next step: python query_docs.py "your question here"
 ```
 
 > Indexing time: roughly **1–5 minutes per 100 pages** on an M3 Mac with the default model.
-> Re-runs are fast if you add new PDFs with `--reset` (see below).
+
+**Adding more PDFs later:**
+To add new PDFs to an existing index, simply copy them into `pdfs/` and re-run:
+```bash
+python index_docs.py
+```
+This appends new documents without disturbing what is already indexed.
+
+Use `--reset` **only** when you need to rebuild the entire index from scratch (e.g., after changing the embedding model in `config.py`).
+
+> ⚠️ **Warning:** `--reset` permanently deletes all previously indexed data.
 
 ### 7 — Query your documents
-
 ```bash
 python query_docs.py "Your question here"
 ```
 
 **Examples:**
-
 ```bash
-python query_docs.py "What is the maximum number of PDCCH candidates per slot?"
-python query_docs.py "Explain the difference between MCS table 1 and table 2" --top-k 8
-python query_docs.py "slot formats TDD" --chunks-only     # skip LLM, show raw chunks
-python query_docs.py --interactive                         # REPL mode for multiple queries
-python query_docs.py "some query" --out results.md         # save to file
+python query_docs.py "Summarize the main topics in this document"
+python query_docs.py "What does this document say about accessibility?" --top-k 8
+python query_docs.py "introduction" --chunks-only     # skip LLM, show raw chunks only
+python query_docs.py --interactive                     # REPL mode for multiple queries
+python query_docs.py "some query" --out results.md     # save output to file
 ```
 
 **Example output:**
-
 ```
 ════════════════════════════════════════════════════════════
-QUERY: What is the maximum number of PDCCH candidates per slot?
+QUERY: What does this document say about accessibility?
 ════════════════════════════════════════════════════════════
 
 ── SYNTHESIZED ANSWER ──────────────────────────────────────
-The maximum number of PDCCH candidates per slot is 44 for aggregation
-level 1, as specified in TS 38.213 Table 10.1-2. This limit applies
-across all configured search spaces.
+The document defines accessibility as the ability for people with
+disabilities to access and use web content ...
 
 ── SOURCE CHUNKS (top 5) ────────────────────────────────────
 
-[1] TS_38_212_v17.pdf  |  page 47  |  score 0.8932
-    The maximum number of PDCCH candidates per slot per serving cell
-    is given in Table 10.1-2 ...
-
-[2] TS_38_211_v17.pdf  |  page 23  |  score 0.8741
-    ...
+[1] test.pdf  |  page 3  |  score 0.8932
+    Web Content Accessibility Guidelines (WCAG) 2.1 covers a wide
+    range of recommendations for making Web content more accessible ...
 ```
 
 ---
@@ -194,7 +205,6 @@ across all configured search spaces.
 All parameters live in **`config.py`** — you should not need to edit the other scripts.
 
 ### Switch the embedding model
-
 ```python
 # config.py
 EMBED_MODEL_NAME = "BAAI/bge-base-en-v1.5"   # larger, more accurate
@@ -207,14 +217,13 @@ EMBED_MODEL_NAME = "BAAI/bge-base-en-v1.5"   # larger, more accurate
 | `BAAI/bge-large-en-v1.5` | 1024 | ~1.3GB | slow on CPU | best recall |
 | `sentence-transformers/all-MiniLM-L6-v2` | 384 | ~90MB | fastest | lightweight alternative |
 
-> **Important:** If you change the embedding model, you must re-index:
+> ⚠️ If you change the embedding model, you must rebuild the index:
 > ```bash
 > python index_docs.py --reset
 > ```
-> Vectors from different models are incompatible.
+> Vectors from different embedding models are not interchangeable.
 
 ### Switch the LLM
-
 ```python
 # config.py
 OLLAMA_LLM = "llama3"   # then: ollama pull llama3
@@ -229,83 +238,75 @@ OLLAMA_LLM = "llama3"   # then: ollama pull llama3
 | `gemma2` | ~5.5GB | ~12s/query | strong for technical text |
 | `llama3.1` | ~4.7GB | ~10s/query | improved instruction following |
 
-To disable LLM synthesis entirely (return raw chunks only):
-
+To disable LLM synthesis and return raw chunks only:
 ```python
 OLLAMA_LLM = None
 ```
 
 ### Tune chunking
-
 ```python
 # config.py
-CHUNK_SIZE = 512     # tokens per chunk; increase for more context per chunk
-CHUNK_OVERLAP = 100  # token overlap; increase if answers are cut off at boundaries
+CHUNK_SIZE = 512     # tokens per chunk
+CHUNK_OVERLAP = 100  # overlap between consecutive chunks
 ```
 
-Larger chunks → more context per retrieval, but less precise matching.
-Smaller chunks → more precise matching, but answers may lack context.
+Larger chunks → more context per retrieval, less precise matching.
+Smaller chunks → more precise matching, less surrounding context.
 Typical range: `CHUNK_SIZE` 256–1024.
 
 ### Tune retrieval
-
 ```python
 # config.py
-SIMILARITY_TOP_K = 5      # how many chunks to retrieve per query
+SIMILARITY_TOP_K = 5      # chunks retrieved per query
 RESPONSE_MODE = "compact" # "compact" | "tree_summarize" | "no_text"
 ```
 
 - `compact` — concatenates chunks, passes to LLM once (default, fast)
 - `tree_summarize` — hierarchical summarization (better for long answers, slower)
-- `no_text` — same as `--chunks-only`, skips LLM
+- `no_text` — skips LLM, same as `--chunks-only`
 
-### Add PDFs from subdirectories
+### Scan PDFs in subdirectories
 
 In `index_docs.py`, change:
-
 ```python
 reader = SimpleDirectoryReader(
     input_dir=source,
     required_exts=[".pdf"],
-    recursive=True,       # ← add this
+    recursive=True,       # ← add this line
 )
 ```
 
-### Use Qdrant as a server (for large collections or multi-user access)
+### Use Qdrant as a server (large collections or multi-user)
 
 Start Qdrant via Docker:
-
 ```bash
 docker run -p 6333:6333 -v $(pwd)/qdrant_storage:/qdrant/storage qdrant/qdrant
 ```
 
-Then set in `config.py`:
-
+Then in `config.py`:
 ```python
 QDRANT_MODE = "server"
 QDRANT_SERVER_URL = "http://localhost:6333"
 ```
 
-The server mode is recommended for collections above ~50,000 chunks.
+Recommended for collections above ~50,000 chunks.
 
 ---
 
 ## CLI reference
 
 ### `index_docs.py`
-
 ```
 python index_docs.py                    # index all PDFs in pdfs/
-python index_docs.py --reset            # wipe index first, then re-index
-python index_docs.py --pdf myfile.pdf   # index a single file (adds to index)
+python index_docs.py --reset            # wipe entire index, then re-index from scratch
+python index_docs.py --pdf myfile.pdf   # index a single file (adds to existing index)
 ```
 
 ### `query_docs.py`
-
 ```
-python query_docs.py "question"         # single query
-python query_docs.py "question" --top-k 10          # retrieve 10 chunks
-python query_docs.py "question" --chunks-only        # no LLM synthesis
+python query_docs.py "question"                      # single query with LLM synthesis
+python query_docs.py "question" --top-k 10           # retrieve 10 chunks
+python query_docs.py "question" --chunks-only        # no LLM, raw chunks only
 python query_docs.py --interactive                   # REPL mode
 python query_docs.py "question" --out results.md     # append output to file
 ```
@@ -315,11 +316,11 @@ python query_docs.py "question" --out results.md     # append output to file
 ## Troubleshooting
 
 ### `ollama: connection refused`
-Ollama is not running. Start it:
+Ollama is not running. On Linux or macOS terminal-only:
 ```bash
 ollama serve
 ```
-Or on macOS, launch the Ollama app from Applications.
+On macOS, launch the Ollama app from Applications.
 
 ### `ModuleNotFoundError: No module named 'llama_index'`
 The virtual environment is not activated:
@@ -327,27 +328,36 @@ The virtual environment is not activated:
 source venv/bin/activate
 ```
 
+### `pip install` fails with `ResolutionImpossible`
+You are likely using Python 3.13, which is not supported. Create a venv with Python 3.11:
+```bash
+brew install python@3.11           # macOS
+python3.11 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
 ### `Collection 'pdf_docs' not found`
-You have not run the indexer yet, or the storage path has changed:
+The index has not been built yet:
 ```bash
 python index_docs.py
 ```
 
 ### `No PDF files found in './pdfs'`
-Place at least one `.pdf` file in the `pdfs/` directory before indexing.
+Place at least one `.pdf` file in the `pdfs/` directory, or use the test download from Step 5.
 
-### Query is very slow (>60s)
-- The LLM is loading for the first time. Subsequent queries are faster.
-- Switch to a smaller model: `OLLAMA_LLM = "phi3"` in `config.py`.
+### Query is slow (>60s)
+- First query is always slower (LLM loads into memory). Subsequent queries are faster.
+- Switch to a smaller model: set `OLLAMA_LLM = "phi3"` in `config.py`, then `ollama pull phi3`.
 - Use `--chunks-only` to skip LLM synthesis entirely.
 
 ### Irrelevant results
-- Increase `SIMILARITY_TOP_K` to retrieve more candidates.
-- Try a larger embedding model (`bge-base-en-v1.5`).
-- Reduce `CHUNK_SIZE` (e.g., to 256) to improve chunk granularity.
+- Increase `SIMILARITY_TOP_K` (e.g., 10) in `config.py`.
+- Try a larger embedding model (`BAAI/bge-base-en-v1.5`) — remember to `--reset` and re-index.
+- Reduce `CHUNK_SIZE` to 256 for finer-grained matching.
 
 ### PDF text not extracted correctly
-Some PDFs are scanned images. Install `pymupdf` for better extraction:
+Some PDFs are scanned images with no embedded text. Install `pymupdf` for better extraction:
 ```bash
 pip install pymupdf
 ```
@@ -355,8 +365,7 @@ LlamaIndex will prefer it over `pypdf` automatically when installed.
 
 ---
 
-## How it works (architecture)
-
+## How it works
 ```
 ┌─────────────┐    chunk + embed     ┌──────────────────┐
 │  PDF Files  │ ─────────────────→  │ Qdrant (local DB) │
@@ -376,12 +385,8 @@ LlamaIndex will prefer it over `pypdf` automatically when installed.
                                      └─────────────────┘
 ```
 
-1. **Indexing**: PDFs are parsed → split into overlapping chunks → each chunk is
-   converted to a dense vector by the embedding model → stored in Qdrant.
-
-2. **Querying**: The query is embedded using the same model → Qdrant returns the
-   top-K most similar chunks (cosine similarity) → the chunks are passed to the
-   LLM with a prompt to synthesize a grounded answer.
+1. **Indexing**: PDFs → chunked into overlapping segments → each chunk embedded as a dense vector → stored in Qdrant.
+2. **Querying**: Query embedded with the same model → Qdrant returns top-K most similar chunks (cosine similarity) → chunks passed to LLM for grounded answer synthesis.
 
 ---
 
