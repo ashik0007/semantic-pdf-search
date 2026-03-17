@@ -172,6 +172,8 @@ and stores everything in `qdrant_storage/`.
 [index] Collection 'pdf_docs' is ready for queries.
         Storage: qdrant_storage
         Next step: python query_docs.py "your question here"
+Indexing time: roughly **1–5 minutes per 100 pages** on an M3 Mac with the default model.
+You may also see model loading diagnostics (e.g., `BertModel LOAD REPORT`) and a `QdrantClient` cleanup warning at exit — both are harmless.
 ```
 
 **To add more PDFs later:** copy them into `pdfs/` and re-run `python index_docs.py`.

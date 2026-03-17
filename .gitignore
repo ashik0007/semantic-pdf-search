@@ -1,2 +1,21 @@
+# Python environment
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Vector index (auto-created by index_docs.py)
+qdrant_storage/
+
+# PDFs (user-supplied, not committed)
+pdfs/*.pdf
 !pdfs/PUT_YOUR_PDFS_HERE.md
+
+# macOS
 .DS_Store
+.AppleDouble
+
+# IDE
+.idea/
+.vscode/
+*.swp
