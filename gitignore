@@ -1,0 +1,38 @@
+# semantic-pdf-search — .gitignore
+
+# ── User data (never commit PDFs or the vector index) ────────────────────────
+pdfs/
+qdrant_storage/
+
+# ── Python environment ───────────────────────────────────────────────────────
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+*.egg
+
+# ── Hugging Face model cache (large, re-downloadable) ────────────────────────
+.cache/
+
+# ── Query output files ───────────────────────────────────────────────────────
+*.md.bak
+query_results/
+
+# ── macOS metadata ───────────────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# ── IDE files ────────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ── Jupyter (if you add notebooks later) ─────────────────────────────────────
+.ipynb_checkpoints/

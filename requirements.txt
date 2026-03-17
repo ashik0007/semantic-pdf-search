@@ -1,0 +1,36 @@
+# semantic-pdf-search — Python dependencies
+#
+# Install with:
+#   pip install -r requirements.txt
+#
+# Tested on Python 3.10 and 3.11 (macOS Apple Silicon, Ubuntu 22.04 x86_64).
+# Python 3.12 is compatible but some transitive deps may emit deprecation warnings.
+#
+# LlamaIndex uses a modular package layout as of 0.10+.
+# Core is separate from integrations — all listed explicitly below.
+
+# ── LlamaIndex core ──────────────────────────────────────────────────────────
+llama-index-core>=0.10.0,<0.12.0
+
+# ── Integrations ─────────────────────────────────────────────────────────────
+llama-index-embeddings-huggingface>=0.2.0
+llama-index-vector-stores-qdrant>=0.2.0
+llama-index-llms-ollama>=0.1.0
+llama-index-readers-file>=0.1.0     # SimpleDirectoryReader PDF support
+
+# ── Vector database ──────────────────────────────────────────────────────────
+qdrant-client>=1.9.0,<2.0.0
+
+# ── Embedding model backend ──────────────────────────────────────────────────
+# sentence-transformers pulls torch; ~2GB on first install.
+# On Apple Silicon, torch uses the MPS backend automatically.
+sentence-transformers>=2.7.0
+torch>=2.1.0                        # CPU/MPS; for CUDA, install the CUDA wheel separately
+
+# ── PDF parsing ──────────────────────────────────────────────────────────────
+pypdf>=4.0.0                        # LlamaIndex default PDF reader
+# Optional: install pymupdf for faster/better extraction on complex PDFs
+# pip install pymupdf
+
+# ── Utilities ────────────────────────────────────────────────────────────────
+tqdm>=4.66.0                        # progress bars
